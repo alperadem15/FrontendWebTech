@@ -1,11 +1,18 @@
-<script setup lang="ts"></script>
-
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <div class="home">
+    <h1>{{ headline }}</h1>
+    <DynamicForm :title="formTitle" />
+  </div>
 </template>
 
-<style scoped></style>
+<script setup lang="ts">
+import { ref } from 'vue'
+import DynamicForm from '@/components/DynamicForm.vue'
+
+const headline = ref('Autovermietung Stern – Willkommen!')
+const formTitle = ref('Formular für Fahrzeuganfrage')
+</script>
+
+<style scoped>
+/* optional eigenes Styling */
+</style>
