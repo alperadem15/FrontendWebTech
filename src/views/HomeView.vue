@@ -11,8 +11,9 @@
 import DynamicForm from '@/components/DynamicForm.vue'
 
 // reaktive Variablen (statt data())
-const headline = ref('Autovermietung Stern – Willkommen!')
+const headline = ref('Autovermietung Stern – Willkommen zu Ihrem nächsten Traumwagen!')
 const formTitle = ref('Formular für Fahrzeuganfrage')
+
 </script>
 
 <style scoped>
