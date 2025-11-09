@@ -7,7 +7,7 @@
 
 <script setup>
 // Composition API mit <script setup>
-
+import { ref } from 'vue'
 import DynamicForm from '@/components/DynamicForm.vue'
 
 // reaktive Variablen (statt data())
