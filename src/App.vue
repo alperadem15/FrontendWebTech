@@ -10,6 +10,10 @@
     <ul v-else>
       <li v-for="car in cars" :key="car.id">
         {{ car.brand }} {{ car.model }} – {{ car.pricePerDay }} €/Tag
+        <span v-if="!car.rented">
+          <button @click="rentCar(car.id)">Mieten</button>
+        </span>
+        <span v-else>✅ Vermietet</span>
       </li>
     </ul>
 
@@ -26,6 +30,7 @@ type Car = {
   brand: string
   model: string
   pricePerDay: number
+  rented: boolean
 }
 
 const headline = ref('Autovermietung Stern – Willkommen zu Ihrem nächsten Traumwagen!')
@@ -36,10 +41,15 @@ const loading = ref(true)
 const error = ref('')
 
 onMounted(async () => {
+  await loadCars()
+})
+
+async function loadCars() {
+  loading.value = true
+  error.value = ''
   try {
     const res = await fetch('https://webtech-in4o.onrender.com/cars')
     if (!res.ok) throw new Error('HTTP ' + res.status)
-
     const data = (await res.json()) as Car[]
     cars.value = data
   } catch (e) {
@@ -47,25 +57,24 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
-})
+}
+
+async function rentCar(carId: number) {
+  try {
+    const res = await fetch(`https://webtech-in4o.onrender.com/kunde/rent/${carId}`, {
+      method: 'POST'
+    })
+    const message = await res.text()
+    alert(message)
+    // Autos nach Miete neu laden
+    await loadCars()
+  } catch (err) {
+    console.error('Fehler beim Mieten:', err)
+    alert('Fehler beim Mieten: ' + err)
+  }
+}
 </script>
 
 <style scoped>
-.home {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-  font-family: Arial, sans-serif;
-  text-align: center;
-}
-
-h1 {
-  color: #2c3e50;
-  margin-bottom: 2rem;
-}
-
-.err {
-  color: #b00020;
-  font-weight: bold;
-}
+/* bleibt wie bisher */
 </style>
