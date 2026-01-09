@@ -1,19 +1,28 @@
 <template>
   <div class="home">
-    <h1>{{ headline }}</h1>
+    <h1>Autovermietung STERN</h1>
+    <p class="subtitle">Performance. Power. Vermietung.</p>
 
-    <div v-if="loading">Lädt...</div>
-    <div v-else-if="error" class="err">Fehler: {{ error }}</div>
+    <h2>Unsere Fahrzeuge</h2>
+
+    <p v-if="loading">Lädt...</p>
+    <p v-else-if="error" class="err">Fehler: {{ error }}</p>
+
     <div v-else class="cars-grid">
       <div class="car-card" v-for="car in cars" :key="car.id">
         <h3>{{ car.brand }} {{ car.model }}</h3>
-        <p>Preis: {{ car.pricePerDay }} €/Tag</p>
-        <p v-if="car.rented" class="rented">❌ Vermietet</p>
-        <p v-else class="available">✅ Verfügbar</p>
+        <p class="price">{{ car.pricePerDay }} € / Tag</p>
+
+        <p
+          class="status"
+          :class="car.rented ? 'rented' : 'available'"
+        >
+          {{ car.rented ? '❌ Vermietet' : '✅ Verfügbar' }}
+        </p>
       </div>
     </div>
 
-    <DynamicForm :title="formTitle" />
+    <DynamicForm title="Registrierung / Anfrage" />
   </div>
 </template>
 
@@ -29,9 +38,6 @@ type Car = {
   rented?: boolean
 }
 
-const headline = ref('Autovermietung Stern – Willkommen!')
-const formTitle = ref('Registrierung / Fahrzeuganfrage')
-
 const cars = ref<Car[]>([])
 const loading = ref(true)
 const error = ref('')
@@ -40,8 +46,7 @@ onMounted(async () => {
   try {
     const res = await fetch('https://webtech-in4o.onrender.com/cars')
     if (!res.ok) throw new Error('HTTP ' + res.status)
-    const data = await res.json()
-    cars.value = data
+    cars.value = await res.json()
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
   } finally {
@@ -52,54 +57,76 @@ onMounted(async () => {
 
 <style scoped>
 .home {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 2rem;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #1a1a1a, #0f0f0f);
+  color: #f5f5f5;
+  padding: 2.5rem;
+  font-family: 'Segoe UI', system-ui, sans-serif;
   text-align: center;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 h1 {
-  color: #1e3a8a;
-  margin-bottom: 2rem;
+  font-size: 2.6rem;
+  color: #e10600;
+  letter-spacing: 2px;
+  margin-bottom: 0.3rem;
+}
+
+.subtitle {
+  color: #aaa;
+  margin-bottom: 3rem;
+}
+
+h2 {
+  margin-bottom: 1.5rem;
+  color: #fff;
 }
 
 .cars-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 1.5rem;
-  margin-bottom: 2rem;
+  margin-bottom: 3rem;
 }
 
 .car-card {
-  padding: 1rem;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #f9f9f9, #e6f0ff);
-  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-  transition: transform 0.2s;
+  background: linear-gradient(145deg, #1a1a1a, #121212);
+  border: 1px solid #2a2a2a;
+  border-radius: 14px;
+  padding: 1.4rem;
+  transition: all 0.25s ease;
 }
 
 .car-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-6px);
+  box-shadow: 0 0 20px rgba(225, 6, 0, 0.35);
 }
 
 .car-card h3 {
   margin-bottom: 0.5rem;
-  color: #1e3a8a;
+}
+
+.price {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #e10600;
+}
+
+.status {
+  margin-top: 0.6rem;
+  font-weight: bold;
 }
 
 .available {
-  color: green;
-  font-weight: bold;
+  color: #00ff88;
 }
 
 .rented {
-  color: red;
-  font-weight: bold;
+  color: #e10600;
 }
 
 .err {
-  color: #b00020;
+  color: #ff4d4d;
   font-weight: bold;
 }
 </style>
