@@ -16,17 +16,17 @@
       <button type="submit">Absenden</button>
     </form>
 
-    <p v-if="message" :class="{'success-message': success, 'err': !success}">
-      {{ message }}
+    <p v-if="submitted" class="success-message">
+      ✅ Formular wurde erfolgreich abgesendet!
     </p>
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref } from 'vue'
 
 defineProps({
-  title: { type: String, required: true }
+  title: String
 })
 
 const fields = ref([
@@ -35,39 +35,77 @@ const fields = ref([
   { name: 'password', label: 'Passwort', type: 'password', placeholder: 'Ihr Passwort', value: '' }
 ])
 
-const message = ref('')
-const success = ref(false)
+const submitted = ref(false)
 
-async function handleSubmit() {
-  const payload = {
-    name: fields.value.find(f => f.name === 'name')?.value,
-    email: fields.value.find(f => f.name === 'email')?.value,
-    password: fields.value.find(f => f.name === 'password')?.value
-  }
-
-  try {
-    const res = await fetch('https://webtech-in4o.onrender.com/kunde/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-
-    if (!res.ok) throw new Error('HTTP ' + res.status)
-    const data = await res.json()
-    message.value = `Registrierung erfolgreich! ID: ${data.id}`
-    success.value = true
-
-    // Felder leeren
-    fields.value.forEach(f => f.value = '')
-
-  } catch (err: any) {
-    message.value = 'Fehler bei Registrierung: ' + (err.message || err)
-    success.value = false
-  }
+function handleSubmit() {
+  console.log('Formular-Daten:', fields.value)
+  submitted.value = true
+  setTimeout(() => (submitted.value = false), 3000)
 }
 </script>
 
 <style scoped>
-/* bleibt wie bisher, ergänzt Error-Style */
-.err { color: #b00020; font-weight: bold; margin-top: 1rem; }
+.dynamic-form {
+  max-width: 450px;
+  margin: 2rem auto;
+  padding: 2rem;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #ffffff, #e6f0ff);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+h2 {
+  text-align: center;
+  color: #1e3a8a;
+  margin-bottom: 1.5rem;
+}
+
+.form-field {
+  margin-bottom: 1rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-weight: 600;
+  color: #333;
+}
+
+input {
+  width: 100%;
+  padding: 0.7rem;
+  border-radius: 8px;
+  border: 1px solid #b0c4de;
+  transition: all 0.2s;
+}
+
+input:focus {
+  outline: none;
+  border-color: #1e3a8a;
+  box-shadow: 0 0 5px rgba(30, 58, 138, 0.5);
+}
+
+button {
+  width: 100%;
+  background-color: #1e3a8a;
+  color: white;
+  border: none;
+  padding: 0.8rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background-color: #2c50c4;
+}
+
+.success-message {
+  margin-top: 1rem;
+  text-align: center;
+  color: green;
+  font-weight: bold;
+}
 </style>
