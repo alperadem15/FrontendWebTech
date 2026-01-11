@@ -38,6 +38,7 @@ function goDefault() {
 function logout() {
   localStorage.removeItem('authToken')
   localStorage.removeItem('role')
+  window.dispatchEvent(new Event('auth-changed'))
   router.push('/') // App reagiert automatisch
 }
 

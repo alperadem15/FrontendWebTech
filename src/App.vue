@@ -9,26 +9,44 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import NavBar from '@/components/NavBar.vue'
-import { apiFetch } from './api'
+import { apiFetch } from '@/api'
 
 const isLoggedIn = ref(false)
 
-onMounted(async () => {
+async function refreshAuthState() {
   const token = localStorage.getItem('authToken')
-  if (token) {
-    try {
-      // Prüfe Token beim Backend
-      await apiFetch('/auth/me')
-      isLoggedIn.value = true
-    } catch {
-      // Token ungültig → Logout
-      localStorage.removeItem('authToken')
-      localStorage.removeItem('role')
-      isLoggedIn.value = false
-    }
+
+  // Kein Token -> sicher ausgeloggt
+  if (!token) {
+    isLoggedIn.value = false
+    return
   }
+
+  // Token vorhanden -> beim Backend prüfen
+  try {
+    await apiFetch('/auth/me')
+    isLoggedIn.value = true
+  } catch {
+    // Token ungültig -> logout
+    localStorage.removeItem('authToken')
+    localStorage.removeItem('role')
+    isLoggedIn.value = false
+  }
+}
+
+function onAuthChanged() {
+  refreshAuthState()
+}
+
+onMounted(async () => {
+  await refreshAuthState()
+  window.addEventListener('auth-changed', onAuthChanged)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('auth-changed', onAuthChanged)
 })
 </script>
 

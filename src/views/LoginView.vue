@@ -5,7 +5,9 @@
     <form @submit.prevent="login">
       <input v-model="email" type="email" placeholder="E-Mail" required />
       <input v-model="password" type="password" placeholder="Passwort" required />
-      <button type="submit">Login</button>
+      <button type="submit" :disabled="loading">
+        {{ loading ? 'Login...' : 'Login' }}
+      </button>
     </form>
 
     <p v-if="error" class="err">{{ error }}</p>
@@ -16,37 +18,61 @@
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
+const API_BASE = 'https://webtech-in4o.onrender.com'
+
 const router = useRouter()
 const route = useRoute()
 
 const email = ref('')
 const password = ref('')
 const error = ref('')
+const loading = ref(false)
 
-const role = route.params.role as 'kunde' | 'vermieter' || 'kunde'
+const role = (route.params.role as 'kunde' | 'vermieter') || 'kunde'
 const title = role === 'kunde' ? 'Kunden Login' : 'Vermieter Login'
 
 async function login() {
   error.value = ''
+  loading.value = true
+
   try {
-    const res = await fetch(`https://webtech-in4o.onrender.com/auth/login/${role}`, {
+    const url =
+      role === 'vermieter'
+        ? `${API_BASE}/vermieter/login`
+        : `${API_BASE}/auth/login/kunde` // falls dein Kunde-Login unter /auth läuft
+
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.value, password: password.value })
     })
 
-    if (!res.ok) throw new Error('Login fehlgeschlagen')
+    if (!res.ok) throw new Error('Login fehlgeschlagen (HTTP ' + res.status + ')')
+
     const data = await res.json()
 
-    // Token speichern
-    localStorage.setItem('authToken', data.token)
+    // ✅ Minimal: wir setzen authToken einfach auf "ok" (weil dein Backend noch kein echtes JWT liefert)
+    // Damit Route-Guard + App.vue funktionieren.
+    localStorage.setItem('authToken', 'ok')
     localStorage.setItem('role', role)
+
+    // ✅ Vermieter-ID speichern (nur wenn Vermieter)
+    if (role === 'vermieter') {
+      // aus deinem AutovermieterController: { vermieterId, message }
+      localStorage.setItem('vermieterId', String(data.vermieterId))
+    } else {
+      localStorage.removeItem('vermieterId')
+    }
+
+    window.dispatchEvent(new Event('auth-changed'))
 
     // Weiterleitung
     if (role === 'kunde') router.push('/home')
     else router.push('/vermieter/dashboard')
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
+  } finally {
+    loading.value = false
   }
 }
 </script>
@@ -82,6 +108,11 @@ button {
   color: white;
   font-weight: bold;
   cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .err {

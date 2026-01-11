@@ -3,36 +3,53 @@
     <h1>Vermieter-Dashboard</h1>
     <p class="subtitle">Verwalte deine Fahrzeuge</p>
 
-    <!-- Neues Auto hinzufügen -->
-    <div class="new-car-form">
-      <h2>Neues Auto hinzufügen</h2>
-      <form @submit.prevent="addCar">
-        <input v-model="newCar.brand" type="text" placeholder="Marke" required />
-        <input v-model="newCar.model" type="text" placeholder="Modell" required />
-        <input v-model.number="newCar.pricePerDay" type="number" placeholder="Preis pro Tag" required />
-        <button type="submit">Auto hinzufügen</button>
-      </form>
+    <div v-if="!vermieterId" class="err">
+      ❌ Keine Vermieter-ID gefunden. Bitte erneut einloggen.
     </div>
 
-    <h2>Meine Autos</h2>
-    <p v-if="loading">Lädt Autos...</p>
-    <p v-else-if="error" class="err">{{ error }}</p>
+    <template v-else>
+      <!-- Neues Auto hinzufügen -->
+      <div class="new-car-form">
+        <h2>Neues Auto hinzufügen</h2>
 
-    <div v-else class="cars-grid">
-      <div class="car-card" v-for="car in cars" :key="car.id">
-        <h3>{{ car.brand }} {{ car.model }}</h3>
-        <p class="price">{{ car.pricePerDay }} € / Tag</p>
-        <p :class="car.rented ? 'rented' : 'available'">
-          {{ car.rented ? '❌ Vermietet' : '✅ Verfügbar' }}
-        </p>
+        <form @submit.prevent="addCar">
+          <input v-model="newCar.brand" type="text" placeholder="Marke" required />
+          <input v-model="newCar.model" type="text" placeholder="Modell" required />
+          <input v-model.number="newCar.pricePerDay" type="number" min="0" step="0.01" placeholder="Preis pro Tag" required />
+          <button type="submit" :disabled="adding">
+            {{ adding ? 'Speichere...' : 'Auto hinzufügen' }}
+          </button>
+        </form>
 
-        <!-- Aktionen -->
-        <button @click="toggleRented(car)">
-          {{ car.rented ? 'Auf verfügbar setzen' : 'Als vermietet markieren' }}
-        </button>
-        <button @click="deleteCar(car.id)" class="delete-btn">Löschen</button>
+        <p v-if="addError" class="err">{{ addError }}</p>
       </div>
-    </div>
+
+      <h2>Meine Autos</h2>
+      <p v-if="loading">Lädt Autos...</p>
+      <p v-else-if="error" class="err">{{ error }}</p>
+
+      <div v-else class="cars-grid">
+        <div class="car-card" v-for="car in cars" :key="car.id">
+          <h3>{{ car.brand }} {{ car.model }}</h3>
+          <p class="price">{{ car.pricePerDay }} € / Tag</p>
+
+          <p :class="car.rented ? 'rented' : 'available'">
+            {{ car.rented ? '❌ Vermietet' : '✅ Verfügbar' }}
+          </p>
+
+          <button @click="toggleRented(car)" :disabled="busyIds.has(car.id)">
+            {{ busyIds.has(car.id)
+            ? 'Speichere...'
+            : (car.rented ? 'Auf verfügbar setzen' : 'Als vermietet markieren')
+            }}
+          </button>
+
+          <button @click="deleteCar(car.id)" class="delete-btn" :disabled="busyIds.has(car.id)">
+            {{ busyIds.has(car.id) ? 'Lösche...' : 'Löschen' }}
+          </button>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -44,24 +61,36 @@ type Car = {
   brand: string
   model: string
   pricePerDay: number
-  rented?: boolean
+  rented: boolean
 }
+
+const API_BASE = 'https://webtech-in4o.onrender.com'
+const vermieterId = localStorage.getItem('vermieterId') //  wird beim Login gesetzt
 
 const cars = ref<Car[]>([])
 const loading = ref(true)
 const error = ref('')
 
-// Neues Auto
+const adding = ref(false)
+const addError = ref('')
+
+const busyIds = ref<Set<number>>(new Set())
+
 const newCar = ref({
   brand: '',
   model: '',
   pricePerDay: 0
 })
 
-// Autos vom Backend holen (nur die des Vermieters, Mock)
-onMounted(async () => {
+async function loadCars() {
+  if (!vermieterId) return
+
+  loading.value = true
+  error.value = ''
+
   try {
-    const res = await fetch('https://webtech-in4o.onrender.com/cars') // Backend anpassen für Vermieter
+    // nur eigene Autos
+    const res = await fetch(`${API_BASE}/vermieter/${vermieterId}/cars`)
     if (!res.ok) throw new Error('HTTP ' + res.status)
     cars.value = await res.json()
   } catch (e) {
@@ -69,36 +98,81 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
-})
+}
 
-// Neues Auto hinzufügen
+onMounted(loadCars)
+
 async function addCar() {
+  if (!vermieterId) return
+
+  addError.value = ''
+  adding.value = true
+
   try {
-    const carToAdd = { ...newCar.value }
-    const res = await fetch('https://webtech-in4o.onrender.com/cars', {
+    // Auto wird Owner zugewiesen, weil wir über Vermieter-Endpoint gehen
+    const res = await fetch(`${API_BASE}/vermieter/${vermieterId}/addCar`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(carToAdd)
+      body: JSON.stringify(newCar.value)
     })
-    if (!res.ok) throw new Error('Auto konnte nicht hinzugefügt werden')
-    const addedCar = await res.json()
-    cars.value.push(addedCar)
+
+    if (!res.ok) throw new Error('HTTP ' + res.status)
+
+    const added: Car = await res.json()
+    cars.value.push(added)
     newCar.value = { brand: '', model: '', pricePerDay: 0 }
   } catch (e) {
-    alert('Fehler: ' + (e instanceof Error ? e.message : String(e)))
+    addError.value = 'Fehler beim Hinzufügen: ' + (e instanceof Error ? e.message : String(e))
+  } finally {
+    adding.value = false
   }
 }
 
-// Mietstatus toggeln
-function toggleRented(car: Car) {
-  car.rented = !car.rented
-  // Optional: Backend Update mit fetch('PUT' ...) einfügen
+async function toggleRented(car: Car) {
+  if (!vermieterId) return
+
+  busyIds.value.add(car.id)
+  const newValue = !car.rented
+
+  try {
+    // OwnerId-Schutz
+    const res = await fetch(
+      `${API_BASE}/cars/${car.id}/rented?rented=${newValue}&ownerId=${vermieterId}`,
+      { method: 'PATCH' }
+    )
+    if (!res.ok) throw new Error('HTTP ' + res.status)
+
+    const updated: Car = await res.json()
+    const idx = cars.value.findIndex(c => c.id === car.id)
+    if (idx !== -1) cars.value[idx] = updated
+  } catch (e) {
+    alert('Fehler beim Speichern: ' + (e instanceof Error ? e.message : String(e)))
+  } finally {
+    busyIds.value.delete(car.id)
+  }
 }
 
-// Auto löschen
-function deleteCar(carId: number) {
-  cars.value = cars.value.filter(c => c.id !== carId)
-  // Optional: Backend Update mit fetch('DELETE' ...) einfügen
+async function deleteCar(carId: number) {
+  if (!vermieterId) return
+
+  const ok = confirm('Willst du dieses Auto wirklich löschen?')
+  if (!ok) return
+
+  busyIds.value.add(carId)
+
+  try {
+    // OwnerId-Schutz
+    const res = await fetch(`${API_BASE}/cars/${carId}?ownerId=${vermieterId}`, {
+      method: 'DELETE'
+    })
+    if (!res.ok) throw new Error('HTTP ' + res.status)
+
+    cars.value = cars.value.filter(c => c.id !== carId)
+  } catch (e) {
+    alert('Fehler beim Löschen: ' + (e instanceof Error ? e.message : String(e)))
+  } finally {
+    busyIds.value.delete(carId)
+  }
 }
 </script>
 
@@ -150,6 +224,7 @@ h1 {
   border-radius: 10px;
   font-weight: bold;
   cursor: pointer;
+  color: white;
 }
 
 .cars-grid {
@@ -169,10 +244,6 @@ h1 {
 .car-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 0 20px rgba(225, 6, 0, 0.35);
-}
-
-.car-card h3 {
-  margin-bottom: 0.5rem;
 }
 
 .price {
@@ -202,7 +273,12 @@ button {
   transition: all 0.2s ease;
 }
 
-button:hover {
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+button:hover:not(:disabled) {
   box-shadow: 0 0 12px rgba(225, 6, 0, 0.6);
   transform: translateY(-2px);
 }
@@ -211,8 +287,11 @@ button:hover {
   background: #333;
   margin-left: 0.5rem;
 }
+
 .err {
   color: #ff4d4d;
   font-weight: bold;
+  margin-top: 0.8rem;
+  text-align: center;
 }
 </style>
