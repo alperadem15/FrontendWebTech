@@ -1,13 +1,10 @@
+<!-- src/components/DynamicForm.vue -->
 <template>
   <div class="dynamic-form">
     <h2>{{ title }}</h2>
 
     <form @submit.prevent="handleSubmit">
-      <div
-        class="form-field"
-        v-for="(field, index) in fields"
-        :key="index"
-      >
+      <div class="form-field" v-for="field in fields" :key="field.name">
         <label :for="field.name">{{ field.label }}</label>
         <input
           :id="field.name"
@@ -23,81 +20,82 @@
       </button>
     </form>
 
-    <p v-if="success" class="success-message">
-      ✅ Registrierung erfolgreich!
-    </p>
-
-    <p v-if="error" class="error-message">
-      ❌ {{ error }}
-    </p>
+    <p v-if="success" class="success-message">✅ Registrierung erfolgreich!</p>
+    <p v-if="error" class="error-message">❌ {{ error }}</p>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 /**
  * PROPS
  * title: Überschrift
- * submitUrl: Backend Endpoint (z.B. /auth/register/kunde)
+ * submitUrl: Backend Endpoint
+ * role: 'kunde' | 'vermieter'  -> bestimmt Felder + Payload Keys
  */
 const props = defineProps({
-  title: {
-    type: String,
-    required: true
-  },
-  submitUrl: {
-    type: String,
-    required: true
-  }
+  title: { type: String, required: true },
+  submitUrl: { type: String, required: true },
+  role: { type: String, required: true } // 'kunde' | 'vermieter'
 })
-
-/**
- * FORMULARFELDER
- * → für Kunde & Vermieter gleich
- */
-const fields = ref([
-  { name: 'name', label: 'Name', type: 'text', placeholder: 'Max Mustermann', value: '' },
-  { name: 'email', label: 'E-Mail', type: 'email', placeholder: 'max@mail.de', value: '' },
-  { name: 'password', label: 'Passwort', type: 'password', placeholder: '••••••••', value: '' }
-])
 
 const loading = ref(false)
 const success = ref(false)
 const error = ref('')
 
-/**
- * SUBMIT
- */
+const fields = ref([])
+
+function buildFields(role) {
+  if (role === 'kunde') {
+    fields.value = [
+      { name: 'vorname', label: 'Vorname', type: 'text', placeholder: 'Max', value: '' },
+      { name: 'nachname', label: 'Nachname', type: 'text', placeholder: 'Mustermann', value: '' },
+      { name: 'email', label: 'E-Mail', type: 'email', placeholder: 'max@mail.de', value: '' },
+      { name: 'password', label: 'Passwort', type: 'password', placeholder: '••••••••', value: '' }
+    ]
+  } else {
+    fields.value = [
+      { name: 'firmenname', label: 'Firmenname', type: 'text', placeholder: 'Stern Rentals GmbH', value: '' },
+      { name: 'email', label: 'E-Mail', type: 'email', placeholder: 'vermieter@mail.de', value: '' },
+      { name: 'password', label: 'Passwort', type: 'password', placeholder: '••••••••', value: '' }
+    ]
+  }
+}
+
+// initial
+buildFields(props.role)
+
+// falls role mal wechselt
+watch(
+  () => props.role,
+  (newRole) => buildFields(newRole)
+)
+
 async function handleSubmit() {
   loading.value = true
   success.value = false
   error.value = ''
 
-  // Payload bauen
   const payload = {}
-  fields.value.forEach(field => {
-    payload[field.name] = field.value
+  fields.value.forEach((f) => {
+    payload[f.name] = f.value
   })
 
   try {
     const response = await fetch(props.submitUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
 
     if (!response.ok) {
-      throw new Error('Registrierung fehlgeschlagen')
+      const txt = await response.text()
+      throw new Error(txt || `Registrierung fehlgeschlagen (HTTP ${response.status})`)
     }
 
     success.value = true
-
-    // Formular leeren
-    fields.value.forEach(f => (f.value = ''))
-
+    fields.value.forEach((f) => (f.value = ''))
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Unbekannter Fehler'
   } finally {
