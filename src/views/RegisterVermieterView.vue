@@ -1,7 +1,7 @@
 <template>
   <DynamicForm
     title="Autovermieter-Konto erstellen"
-    :submitUrl="'https://webtech-in4o.onrender.com/auth/register/vermieter'"
+    :submitUrl="'https://webtech-in4o.onrender.com/vermieter/register'"
   />
 </template>
 

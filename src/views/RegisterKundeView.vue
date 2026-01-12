@@ -1,7 +1,7 @@
 <template>
   <DynamicForm
     title="Kundenkonto erstellen"
-    :submitUrl="'https://webtech-in4o.onrender.com/auth/register/kunde'"
+    :submitUrl="'https://webtech-in4o.onrender.com/kunde/register'"
   />
 </template>
 
