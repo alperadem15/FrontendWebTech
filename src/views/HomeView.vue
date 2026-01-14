@@ -45,7 +45,7 @@ type Car = {
 }
 
 // Reaktive Variablen
-const headline = ref('Autovermietung Stern – Kundenansicht')
+const headline = ref('Kundenansicht')
 const cars = ref<Car[]>([])
 const loading = ref(true)
 const error = ref('')

@@ -1,0 +1,15 @@
+/* Global Reset + Dark Background */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  overflow-x: hidden;
+}
+
+#app {
+  min-height: 100vh;
+  background: #000;
+}

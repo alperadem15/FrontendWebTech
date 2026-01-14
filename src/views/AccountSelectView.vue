@@ -32,17 +32,39 @@ function goLogin(type: 'kunde' | 'vermieter') {
 
 <style scoped>
 .account-select {
+  min-height: 100vh;
+  width: 100vw;
+  background: #000;
+  color: white;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
   text-align: center;
-  margin-top: 10vh;
 }
-h1 { color: #e10600; margin-bottom: 1rem; }
-p { color: #aaa; margin-bottom: 2rem; }
+
+h1 {
+  color: #e10600;
+  margin-bottom: 1rem;
+}
+
+p {
+  color: #aaa;
+  margin-bottom: 2rem;
+}
+
+.buttons {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
 
 .buttons .btn {
-  display: block;
-  margin: 0.5rem auto;
-  padding: 0.8rem 2rem;
-  border-radius: 10px;
+  width: 320px;
+  padding: 0.9rem 1.5rem;
+  border-radius: 12px;
   background: linear-gradient(135deg, #e10600, #ff1e1e);
   color: white;
   font-weight: bold;
@@ -50,8 +72,10 @@ p { color: #aaa; margin-bottom: 2rem; }
   cursor: pointer;
   transition: all 0.25s ease;
 }
+
 .buttons .btn:hover {
   box-shadow: 0 0 15px rgba(225, 6, 0, 0.7);
   transform: translateY(-2px);
 }
+
 </style>
