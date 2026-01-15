@@ -42,14 +42,23 @@ onMounted(async () => {
     if (!kundeId) throw new Error('Keine kundeId gefunden. Bitte neu einloggen.')
 
     const res = await fetch(`${API_BASE}/cars/my-rental?kundeId=${kundeId}`)
+
+    const contentType = res.headers.get('content-type') || ''
     const text = await res.text()
 
     if (!res.ok) {
-      // Backend wirft RuntimeException -> kommt als Fehlertext
       throw new Error(text || `HTTP ${res.status}`)
     }
 
-    car.value = JSON.parse(text) as Car
+    // ✅ Backend gibt 200 + null (oder JSON Objekt)
+    const trimmed = (text || '').trim()
+    if (!trimmed || trimmed === 'null') {
+      car.value = null
+      return
+    }
+
+    // Falls Content-Type nicht JSON ist, versuchen wir trotzdem zu parsen (Render kann hier variieren)
+    car.value = JSON.parse(trimmed) as Car
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
   } finally {
