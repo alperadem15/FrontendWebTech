@@ -1,9 +1,6 @@
 <template>
   <div id="app">
-    <!-- Navbar nur anzeigen, wenn eingeloggt -->
     <NavBar v-if="isLoggedIn" />
-
-    <!-- Aktuelle View -->
     <router-view />
   </div>
 </template>
@@ -11,37 +8,20 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import NavBar from '@/components/NavBar.vue'
-import { apiFetch } from '@/api'
 
 const isLoggedIn = ref(false)
 
-async function refreshAuthState() {
+function refreshAuthState() {
   const token = localStorage.getItem('authToken')
-
-  // Kein Token -> sicher ausgeloggt
-  if (!token) {
-    isLoggedIn.value = false
-    return
-  }
-
-  // Token vorhanden -> beim Backend prüfen
-  try {
-    await apiFetch('/auth/me')
-    isLoggedIn.value = true
-  } catch {
-    // Token ungültig -> logout
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('role')
-    isLoggedIn.value = false
-  }
+  isLoggedIn.value = !!token
 }
 
 function onAuthChanged() {
   refreshAuthState()
 }
 
-onMounted(async () => {
-  await refreshAuthState()
+onMounted(() => {
+  refreshAuthState()
   window.addEventListener('auth-changed', onAuthChanged)
 })
 
