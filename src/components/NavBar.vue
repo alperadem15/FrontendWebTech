@@ -63,7 +63,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocClick)
   window.removeEventListener('auth-changed', refreshRole)
-}
+})
 
 function goHome() {
   closeMenu()
