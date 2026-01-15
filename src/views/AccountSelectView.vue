@@ -1,6 +1,6 @@
 <template>
   <div class="account-select">
-    <h1>Willkommen bei Autovermietung STERN</h1>
+    <h1>Willkommen bei Rent.io</h1>
     <p>Wähle dein Konto:</p>
 
     <div class="buttons">

@@ -20,25 +20,30 @@
       </button>
     </form>
 
-    <p v-if="success" class="success-message">✅ Registrierung erfolgreich!</p>
+    <p v-if="success" class="success-message">✅ Registrierung erfolgreich! Du wirst eingeloggt…</p>
     <p v-if="error" class="error-message">❌ {{ error }}</p>
   </div>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+
+const API_BASE = 'https://webtech-in4o.onrender.com'
 
 /**
  * PROPS
  * title: Überschrift
  * submitUrl: Backend Endpoint
- * role: 'kunde' | 'vermieter'  -> bestimmt Felder + Payload Keys
+ * role: 'kunde' | 'vermieter'
  */
 const props = defineProps({
   title: { type: String, required: true },
   submitUrl: { type: String, required: true },
   role: { type: String, required: true } // 'kunde' | 'vermieter'
 })
+
+const router = useRouter()
 
 const loading = ref(false)
 const success = ref(false)
@@ -63,14 +68,75 @@ function buildFields(role) {
   }
 }
 
-// initial
 buildFields(props.role)
 
-// falls role mal wechselt
 watch(
   () => props.role,
   (newRole) => buildFields(newRole)
 )
+
+function getValue(name) {
+  const f = fields.value.find(x => x.name === name)
+  return f ? f.value : ''
+}
+
+async function autoLogin(email, password) {
+  const url =
+    props.role === 'vermieter'
+      ? `${API_BASE}/vermieter/login`
+      : `${API_BASE}/kunde/login`
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  })
+
+  const bodyText = await res.text()
+  const contentType = res.headers.get('content-type') || ''
+
+  if (!res.ok) {
+    throw new Error(`Auto-Login fehlgeschlagen (HTTP ${res.status})`)
+  }
+
+  // Kunde: Text
+  if (props.role === 'kunde') {
+    if (!bodyText.toLowerCase().includes('erfolgreich')) {
+      throw new Error(bodyText || 'Email oder Passwort falsch!')
+    }
+
+    localStorage.setItem('authToken', 'ok')
+    localStorage.setItem('role', 'kunde')
+    localStorage.removeItem('vermieterId')
+
+    window.dispatchEvent(new Event('auth-changed'))
+    await router.push('/home')
+    return
+  }
+
+  // Vermieter: JSON { vermieterId, message }
+  let data = null
+  if (contentType.includes('application/json')) {
+    data = JSON.parse(bodyText)
+  } else {
+    // Fallback wenn Backend mal Text liefern sollte
+    if (!bodyText.toLowerCase().includes('erfolgreich')) {
+      throw new Error(bodyText || 'Email oder Passwort falsch!')
+    }
+    data = { vermieterId: null, message: bodyText }
+  }
+
+  if (!data?.vermieterId) {
+    throw new Error(data?.message || 'Vermieter Login fehlgeschlagen (keine ID erhalten)')
+  }
+
+  localStorage.setItem('authToken', 'ok')
+  localStorage.setItem('role', 'vermieter')
+  localStorage.setItem('vermieterId', String(data.vermieterId))
+
+  window.dispatchEvent(new Event('auth-changed'))
+  await router.push('/vermieter/dashboard')
+}
 
 async function handleSubmit() {
   loading.value = true
@@ -81,6 +147,10 @@ async function handleSubmit() {
   fields.value.forEach((f) => {
     payload[f.name] = f.value
   })
+
+  // Wir brauchen email+passwort nach Register für Auto-Login
+  const email = getValue('email')
+  const password = getValue('password')
 
   try {
     const response = await fetch(props.submitUrl, {
@@ -95,6 +165,11 @@ async function handleSubmit() {
     }
 
     success.value = true
+
+    // ✅ Direkt danach Auto-Login (damit Guard dich reinlässt)
+    await autoLogin(email, password)
+
+    // optional: Felder leeren (wird nach Redirect meist egal sein)
     fields.value.forEach((f) => (f.value = ''))
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Unbekannter Fehler'
