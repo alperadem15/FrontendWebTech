@@ -7,6 +7,8 @@ import RegisterKundeView from '@/views/RegisterKundeView.vue'
 import RegisterVermieterView from '@/views/RegisterVermieterView.vue'
 import VermieterDashboardView from '@/views/VermieterDashboardView.vue'
 import LoginView from '@/views/LoginView.vue'
+import VermieterUmsatzView from '@/views/VermieterUmsatzView.vue'
+
 
 const routes = [
   // Startseite: Konto auswählen
@@ -28,7 +30,10 @@ const routes = [
   { path: '/vermieter/dashboard', name: 'vermieter-dashboard', component: VermieterDashboardView },
 
   // Fallback: nicht gefundene Route → Startseite
-  { path: '/:pathMatch(.*)*', redirect: '/' }
+  { path: '/:pathMatch(.*)*', redirect: '/' },
+
+  { path: '/vermieter/umsatz', name: 'vermieter-umsatz', component: VermieterUmsatzView },
+
 ]
 
 const router = createRouter({
@@ -42,13 +47,14 @@ router.beforeEach((to, from, next) => {
   const role = localStorage.getItem('role') // 'kunde' oder 'vermieter'
 
   // Routen, die Login erfordern
-  const authRequiredRoutes = ['home', 'vermieter-dashboard']
+  const authRequiredRoutes = ['home', 'vermieter-dashboard', 'vermieter-umsatz']
 
   if (authRequiredRoutes.includes(to.name as string) && !token) {
     // Nicht eingeloggt → Login-Seite
     next({ name: 'account-select' })
     return
   }
+
 
   // Rollenprüfung
   if (to.name === 'home' && role !== 'kunde') {
@@ -59,6 +65,11 @@ router.beforeEach((to, from, next) => {
     next({ name: 'account-select' }) // Nur Vermieter dürfen Dashboard
     return
   }
+  if (to.name === 'vermieter-umsatz' && role !== 'vermieter') {
+    next({ name: 'account-select' })
+    return
+  }
+
 
   next() // Alles ok → weiter
 })

@@ -10,8 +10,12 @@
 
       <!-- Dropdown -->
       <div v-if="menuOpen" class="menu" @click.stop>
+        <!-- Kunde -->
         <button v-if="role === 'kunde'" @click="goHome">Home</button>
+
+        <!-- Vermieter -->
         <button v-if="role === 'vermieter'" @click="goDashboard">Dashboard</button>
+        <button v-if="role === 'vermieter'" @click="goUmsatz">Umsatz</button>
 
         <div class="sep"></div>
 
@@ -42,14 +46,11 @@ function closeMenu() {
   menuOpen.value = false
 }
 
-// ✅ schließt nur, wenn man AUSSERHALB der Navbar-rechten Box klickt
+// Klick außerhalb → Menü schließen
 function onDocClick(e: MouseEvent) {
   const root = menuRoot.value
   if (!root) return
-
-  // Klick innerhalb von Burger oder Dropdown -> NICHT schließen
   if (root.contains(e.target as Node)) return
-
   closeMenu()
 }
 
@@ -62,7 +63,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocClick)
   window.removeEventListener('auth-changed', refreshRole)
-})
+}
 
 function goHome() {
   closeMenu()
@@ -74,9 +75,16 @@ function goDashboard() {
   router.push('/vermieter/dashboard')
 }
 
+function goUmsatz() {
+  closeMenu()
+  router.push('/vermieter/umsatz')
+}
+
 function goDefault() {
   closeMenu()
-  role.value === 'vermieter' ? router.push('/vermieter/dashboard') : router.push('/home')
+  role.value === 'vermieter'
+    ? router.push('/vermieter/dashboard')
+    : router.push('/home')
 }
 
 function logout() {
@@ -121,11 +129,9 @@ function logout() {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-
   border: 1px solid #2a2a2a;
   background: #121212;
   color: #f5f5f5;
-
   font-size: 22px;
   cursor: pointer;
   transition: transform 0.15s ease;
@@ -139,10 +145,8 @@ function logout() {
   position: absolute;
   right: 0;
   top: 54px;
-
   min-width: 200px;
   padding: 0.5rem;
-
   background: #121212;
   border: 1px solid #2a2a2a;
   border-radius: 14px;
@@ -152,10 +156,8 @@ function logout() {
 .menu button {
   width: 100%;
   text-align: left;
-
   padding: 0.75rem 0.85rem;
   border-radius: 10px;
-
   border: none;
   background: transparent;
   color: #f5f5f5;
