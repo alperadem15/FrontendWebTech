@@ -2,9 +2,9 @@
   <nav class="navbar">
     <div class="logo" @click="goDefault">Autovermietung STERN</div>
 
-    <div class="right">
+    <div class="right" ref="menuRoot">
       <!-- Hamburger -->
-      <button class="hamburger" @click="toggleMenu" aria-label="Menü öffnen">
+      <button class="hamburger" @click.stop="toggleMenu" aria-label="Menü öffnen">
         ☰
       </button>
 
@@ -28,6 +28,7 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const role = ref<string | null>(null)
 const menuOpen = ref(false)
+const menuRoot = ref<HTMLElement | null>(null)
 
 function refreshRole() {
   role.value = localStorage.getItem('role')
@@ -41,8 +42,14 @@ function closeMenu() {
   menuOpen.value = false
 }
 
-function onDocClick() {
-  // Klick außerhalb -> Menü zu
+// ✅ schließt nur, wenn man AUSSERHALB der Navbar-rechten Box klickt
+function onDocClick(e: MouseEvent) {
+  const root = menuRoot.value
+  if (!root) return
+
+  // Klick innerhalb von Burger oder Dropdown -> NICHT schließen
+  if (root.contains(e.target as Node)) return
+
   closeMenu()
 }
 
@@ -69,9 +76,7 @@ function goDashboard() {
 
 function goDefault() {
   closeMenu()
-  role.value === 'vermieter'
-    ? router.push('/vermieter/dashboard')
-    : router.push('/home')
+  role.value === 'vermieter' ? router.push('/vermieter/dashboard') : router.push('/home')
 }
 
 function logout() {
@@ -141,7 +146,7 @@ function logout() {
   background: #121212;
   border: 1px solid #2a2a2a;
   border-radius: 14px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
 }
 
 .menu button {
