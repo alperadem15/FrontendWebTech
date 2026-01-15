@@ -45,7 +45,7 @@ type Car = {
   model: string
   pricePerDay: number
   rented?: boolean
-  ownerFirmenname?: string | null // ✅ neu
+  ownerFirmenname?: string | null
 }
 
 // Reaktive Variablen
@@ -68,17 +68,25 @@ onMounted(async () => {
   }
 })
 
-// Auto mieten
+// ✅ Auto mieten (jetzt mit kundeId)
 async function rentCar(carId: number) {
   if (!isLoggedIn.value) {
     alert('Du musst eingeloggt sein, um ein Auto zu mieten!')
     return
   }
 
+  const kundeId = localStorage.getItem('userId')
+  if (!kundeId) {
+    alert('Keine kundeId gefunden. Bitte neu einloggen.')
+    return
+  }
+
   try {
-    const res = await fetch(`https://webtech-in4o.onrender.com/cars/rent/${carId}`, {
-      method: 'POST'
-    })
+    const res = await fetch(
+      `https://webtech-in4o.onrender.com/cars/rent/${carId}?kundeId=${kundeId}`,
+      { method: 'POST' }
+    )
+
     if (!res.ok) throw new Error('HTTP ' + res.status)
     const data = await res.text()
     alert(data)
@@ -136,7 +144,6 @@ h1 {
   margin-bottom: 0.35rem;
 }
 
-/* ✅ optional: Vermieter-Zeile */
 .owner {
   margin: 0 0 0.6rem;
   opacity: 0.85;

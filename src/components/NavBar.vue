@@ -3,15 +3,14 @@
     <div class="logo" @click="goDefault">Autovermietung STERN</div>
 
     <div class="right" ref="menuRoot">
-      <!-- Hamburger -->
       <button class="hamburger" @click.stop="toggleMenu" aria-label="Menü öffnen">
         ☰
       </button>
 
-      <!-- Dropdown -->
       <div v-if="menuOpen" class="menu" @click.stop>
         <!-- Kunde -->
         <button v-if="role === 'kunde'" @click="goHome">Home</button>
+        <button v-if="role === 'kunde'" @click="goMeineMiete">Meine Miete</button>
 
         <!-- Vermieter -->
         <button v-if="role === 'vermieter'" @click="goDashboard">Dashboard</button>
@@ -46,7 +45,6 @@ function closeMenu() {
   menuOpen.value = false
 }
 
-// Klick außerhalb → Menü schließen
 function onDocClick(e: MouseEvent) {
   const root = menuRoot.value
   if (!root) return
@@ -70,6 +68,11 @@ function goHome() {
   router.push('/home')
 }
 
+function goMeineMiete() {
+  closeMenu()
+  router.push('/kunde/miete')
+}
+
 function goDashboard() {
   closeMenu()
   router.push('/vermieter/dashboard')
@@ -82,9 +85,11 @@ function goUmsatz() {
 
 function goDefault() {
   closeMenu()
-  role.value === 'vermieter'
-    ? router.push('/vermieter/dashboard')
-    : router.push('/home')
+  if (role.value === 'vermieter') {
+    router.push('/vermieter/dashboard')
+  } else {
+    router.push('/home')
+  }
 }
 
 function logout() {

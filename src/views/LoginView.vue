@@ -36,9 +36,6 @@ async function login() {
   loading.value = true
 
   try {
-    // ✅ passend zu deinem Backend:
-    // KundeController:      POST /kunde/login  -> String
-    // AutovermieterController: POST /vermieter/login -> JSON { vermieterId, message }
     const url =
       role.value === 'vermieter'
         ? `${API_BASE}/vermieter/login`
@@ -50,23 +47,27 @@ async function login() {
       body: JSON.stringify({ email: email.value, password: password.value })
     })
 
-    // Backend gibt bei Fehlern teilweise trotzdem 200 + Text zurück.
-    // Wir lesen immer erst den Body:
     const contentType = res.headers.get('content-type') || ''
     const bodyText = await res.text()
 
-    if (!res.ok) {
-      throw new Error(`Login fehlgeschlagen (HTTP ${res.status})`)
-    }
+    if (!res.ok) throw new Error(`Login fehlgeschlagen (HTTP ${res.status})`)
 
-    // Kunde: plain text "Login erfolgreich!" oder "Email oder Passwort falsch!"
+    // ✅ Kunde: JSON { kundeId, message }
     if (role.value === 'kunde') {
-      if (!bodyText.toLowerCase().includes('erfolgreich')) {
-        throw new Error(bodyText || 'Email oder Passwort falsch!')
+      let data: any = null
+      if (contentType.includes('application/json')) {
+        data = JSON.parse(bodyText)
+      } else {
+        // falls irgendwas schief läuft
+        if (!bodyText.toLowerCase().includes('erfolgreich')) throw new Error(bodyText)
+        throw new Error('Backend liefert kein JSON für Kunden-Login.')
       }
 
-      localStorage.setItem('authToken', 'ok') // simples Token (noch kein JWT)
+      if (!data?.kundeId) throw new Error(data?.message || 'Kunden Login fehlgeschlagen')
+
+      localStorage.setItem('authToken', 'ok')
       localStorage.setItem('role', 'kunde')
+      localStorage.setItem('userId', String(data.kundeId)) // ✅ neu (Kunde-ID)
       localStorage.removeItem('vermieterId')
 
       window.dispatchEvent(new Event('auth-changed'))
@@ -74,25 +75,21 @@ async function login() {
       return
     }
 
-    // Vermieter: JSON { vermieterId, message }
+    // ✅ Vermieter: JSON { vermieterId, message }
     let data: any = null
     if (contentType.includes('application/json')) {
       data = JSON.parse(bodyText)
     } else {
-      // Fallback: falls Backend doch Text liefert
-      if (!bodyText.toLowerCase().includes('erfolgreich')) {
-        throw new Error(bodyText || 'Email oder Passwort falsch!')
-      }
+      if (!bodyText.toLowerCase().includes('erfolgreich')) throw new Error(bodyText || 'Email oder Passwort falsch!')
       data = { vermieterId: null, message: bodyText }
     }
 
-    if (!data?.vermieterId) {
-      throw new Error(data?.message || 'Vermieter Login fehlgeschlagen (keine ID erhalten)')
-    }
+    if (!data?.vermieterId) throw new Error(data?.message || 'Vermieter Login fehlgeschlagen (keine ID erhalten)')
 
-    localStorage.setItem('authToken', 'ok') // simples Token (noch kein JWT)
+    localStorage.setItem('authToken', 'ok')
     localStorage.setItem('role', 'vermieter')
     localStorage.setItem('vermieterId', String(data.vermieterId))
+    localStorage.removeItem('userId') // Kunde-ID weg
 
     window.dispatchEvent(new Event('auth-changed'))
     router.push('/vermieter/dashboard')

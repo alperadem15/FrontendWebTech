@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-// Views importieren
 import AccountSelectView from '@/views/AccountSelectView.vue'
 import HomeView from '@/views/HomeView.vue'
 import RegisterKundeView from '@/views/RegisterKundeView.vue'
@@ -8,32 +7,25 @@ import RegisterVermieterView from '@/views/RegisterVermieterView.vue'
 import VermieterDashboardView from '@/views/VermieterDashboardView.vue'
 import LoginView from '@/views/LoginView.vue'
 import VermieterUmsatzView from '@/views/VermieterUmsatzView.vue'
-
+import KundeMieteView from '@/views/KundeMieteView.vue'
 
 const routes = [
-  // Startseite: Konto auswählen
   { path: '/', name: 'account-select', component: AccountSelectView },
-
-  // Login
   { path: '/login/:role', name: 'login', component: LoginView, props: true },
 
-  // Kunden-Startseite (Autos ansehen)
   { path: '/home', name: 'home', component: HomeView },
 
-  // Registrierung Kunde
-  { path: '/register/kunde', name: 'register-kunde', component: RegisterKundeView },
+  // Kunde: Meine Miete
+  { path: '/kunde/miete', name: 'kunde-miete', component: KundeMieteView },
 
-  // Registrierung Vermieter
+  { path: '/register/kunde', name: 'register-kunde', component: RegisterKundeView },
   { path: '/register/vermieter', name: 'register-vermieter', component: RegisterVermieterView },
 
-  // Vermieter Dashboard
   { path: '/vermieter/dashboard', name: 'vermieter-dashboard', component: VermieterDashboardView },
-
-  // Fallback: nicht gefundene Route → Startseite
-  { path: '/:pathMatch(.*)*', redirect: '/' },
-
   { path: '/vermieter/umsatz', name: 'vermieter-umsatz', component: VermieterUmsatzView },
 
+  // Fallback immer zuletzt
+  { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
 const router = createRouter({
@@ -41,37 +33,38 @@ const router = createRouter({
   routes
 })
 
-// --------- ROUTE GUARD ---------
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('authToken')
-  const role = localStorage.getItem('role') // 'kunde' oder 'vermieter'
+  const role = localStorage.getItem('role')
 
-  // Routen, die Login erfordern
-  const authRequiredRoutes = ['home', 'vermieter-dashboard', 'vermieter-umsatz']
+  const authRequiredRoutes = ['home', 'vermieter-dashboard', 'vermieter-umsatz', 'kunde-miete']
 
   if (authRequiredRoutes.includes(to.name as string) && !token) {
-    // Nicht eingeloggt → Login-Seite
     next({ name: 'account-select' })
     return
   }
 
-
-  // Rollenprüfung
   if (to.name === 'home' && role !== 'kunde') {
-    next({ name: 'account-select' }) // Nur Kunden dürfen Home
+    next({ name: 'account-select' })
     return
   }
+
+  if (to.name === 'kunde-miete' && role !== 'kunde') {
+    next({ name: 'account-select' })
+    return
+  }
+
   if (to.name === 'vermieter-dashboard' && role !== 'vermieter') {
-    next({ name: 'account-select' }) // Nur Vermieter dürfen Dashboard
+    next({ name: 'account-select' })
     return
   }
+
   if (to.name === 'vermieter-umsatz' && role !== 'vermieter') {
     next({ name: 'account-select' })
     return
   }
 
-
-  next() // Alles ok → weiter
+  next()
 })
 
 export default router
