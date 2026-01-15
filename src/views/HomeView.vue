@@ -11,6 +11,12 @@
     <div v-else class="cars-grid">
       <div class="car-card" v-for="car in cars" :key="car.id">
         <h3>{{ car.brand }} {{ car.model }}</h3>
+
+        <!-- ✅ Vermieter-Firma anzeigen -->
+        <p class="owner" v-if="car.ownerFirmenname">
+          Vermieter: {{ car.ownerFirmenname }}
+        </p>
+
         <p class="price">{{ car.pricePerDay }} € / Tag</p>
 
         <p :class="car.rented ? 'rented' : 'available'">
@@ -18,10 +24,7 @@
         </p>
 
         <!-- Mieten Button nur, wenn verfügbar und eingeloggt -->
-        <button
-          v-if="!car.rented && isLoggedIn"
-          @click="rentCar(car.id)"
-        >
+        <button v-if="!car.rented && isLoggedIn" @click="rentCar(car.id)">
           Auto mieten
         </button>
         <p v-else-if="!isLoggedIn" class="err">
@@ -42,6 +45,7 @@ type Car = {
   model: string
   pricePerDay: number
   rented?: boolean
+  ownerFirmenname?: string | null // ✅ neu
 }
 
 // Reaktive Variablen
@@ -129,7 +133,14 @@ h1 {
 }
 
 .car-card h3 {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+/* ✅ optional: Vermieter-Zeile */
+.owner {
+  margin: 0 0 0.6rem;
+  opacity: 0.85;
+  font-weight: 600;
 }
 
 .price {
