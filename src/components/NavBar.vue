@@ -1,6 +1,6 @@
 <template>
   <nav class="navbar">
-    <div class="logo" @click="goDefault">Autovermietung STERN</div>
+    <div class="logo" @click="goDefault">Rent.io</div>
 
     <div class="right" ref="menuRoot">
       <button class="hamburger" @click.stop="toggleMenu" aria-label="Menü öffnen">
