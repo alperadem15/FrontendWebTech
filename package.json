@@ -13,7 +13,7 @@
     "test:unit": "vitest",
     "test": "vitest run",
     "build-only": "vite build",
-    "type-check": "vue-tsc --build",
+    "type-check": "vue-tsc -p tsconfig.app.json --noEmit",
     "lint": "eslint . --fix --cache",
     "format": "prettier --write src/"
   },
